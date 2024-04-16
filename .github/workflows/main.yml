@@ -1,0 +1,34 @@
+name: compile to PDF
+on:
+  push:
+    paths:
+      - ".github/workflows/main.yaml"
+      - "**.typ"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache typst
+        id: cache-typst
+        uses: actions/cache@v4
+        with:
+          path: typst
+          key: linux-typst-0.11.0
+      - name: Download typst if uncached
+        if: steps.cache-typst.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://github.com/typst/typst/releases/download/v0.11.0/typst-x86_64-unknown-linux-musl.tar.xz
+          du -h typst-x86_64-unknown-linux-musl.tar.xz
+          tar -xf typst-x86_64-unknown-linux-musl.tar.xz
+          mv typst-x86_64-unknown-linux-musl/typst ./typst
+      - name: Compile all typst documents
+        run: |
+          ./typst compile algebra.typ algebra.pdf
+      - uses: actions/upload-artifact@v4
+        with:
+          path: "*.pdf"
